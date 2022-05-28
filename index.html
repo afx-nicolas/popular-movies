@@ -9,16 +9,21 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com" />
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 	<link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+	<script src="env.js" type="module" defer></script>
+	<script src="index.js" type="module" defer></script>
 </head>
 
 <body>
 	<header>
 		<h1 id="main-title">Filmes Populares</h1>
 		<section class="search-parameters">
-			<div class="search-bar">
-				<input type="text" name="search-movie" id="search-movie" placeholder="Digite algum filme para pesquisar..." />
-				<img src="/assets/search-icon.svg" alt="Icone de Lupa" />
-			</div>
+			<form id="search-bar">
+				<input type="text" name="search-movie" autocomplete="off" id="search-movie"
+					placeholder="Digite algum filme para pesquisar..." />
+				<button type="submit" id="search">
+					<img src="/assets/search-icon.svg" alt="Icone de Lupa" />
+				</button>
+			</form>
 			<div class="favorites">
 				<input type="checkbox" name="favorites" id="favorites" />
 				<label for="favorites">Mostrar meus filmes favoritos apenas</label>
@@ -26,7 +31,9 @@
 		</section>
 	</header>
 	<main>
-		<section class="movies-container"></section>
+		<section class="movies-container">
+			<div class="loading"></div>
+		</section>
 	</main>
 	<footer>
 		<p>
@@ -34,7 +41,6 @@
 			<a href="/">Nicolas A. Feitoza</a>
 		</p>
 	</footer>
-	<script src="index.js" defer></script>
 </body>
 
 </html>

@@ -8,7 +8,35 @@ const url = `https://api.themoviedb.org/3`;
 
 const searchForm = document.getElementById('search-bar');
 const searchInput = searchForm.elements['search-movie'];
+const filterFavoritesButton = document.getElementById('favorites');
 const moviesContainer = document.querySelector('section.movies-container');
+
+const clearMoviesContainer = () => (moviesContainer.innerHTML = '');
+
+function getFavoriteMoviesLocalStorage() {
+  return JSON.parse(localStorage.getItem('favoriteMovies')) || [];
+}
+
+function addToFavoriteMoviesLocalStorage(movie) {
+  const favoriteMovies = getFavoriteMoviesLocalStorage();
+
+  localStorage.setItem(
+    'favoriteMovies',
+    JSON.stringify([...favoriteMovies, movie])
+  );
+}
+
+function removeFromFavoriteMoviesLocalStorage(movieToRemove) {
+  const favoriteMovies = getFavoriteMoviesLocalStorage();
+  const filteredFavoriteMovies = favoriteMovies.filter(
+    (movie) => movie.id !== movieToRemove.id
+  );
+
+  localStorage.setItem(
+    'favoriteMovies',
+    JSON.stringify(filteredFavoriteMovies)
+  );
+}
 
 function createMovieOverview(overview) {
   const divMovieOverview = document.createElement('div');
@@ -22,7 +50,7 @@ function createMovieOverview(overview) {
   return divMovieOverview;
 }
 
-function createFavoriteButton() {
+function createFavoriteButton(movieData, isFavorite) {
   const buttonFavorite = document.createElement('button');
 
   buttonFavorite.classList.add('favorite-btn');
@@ -36,8 +64,18 @@ function createFavoriteButton() {
 		Favoritar
 	`;
 
+  isFavorite && buttonFavorite.classList.add('active');
+
   buttonFavorite.addEventListener('click', (e) => {
-    e.target.classList.toggle('active');
+    const button = e.target;
+
+    if (!button.classList.contains('active')) {
+      addToFavoriteMoviesLocalStorage(movieData);
+    } else {
+      removeFromFavoriteMoviesLocalStorage(movieData);
+    }
+
+    button.classList.toggle('active');
   });
 
   return buttonFavorite;
@@ -56,10 +94,10 @@ function createRatingInfo(rating) {
   return spanRating;
 }
 
-function createMovieActions(rating) {
+function createMovieActions(movieData, isFavorite) {
   const divMovieActions = document.createElement('div');
-  const ratingInfo = createRatingInfo(rating);
-  const favoriteButton = createFavoriteButton();
+  const ratingInfo = createRatingInfo(movieData.vote_average);
+  const favoriteButton = createFavoriteButton(movieData, isFavorite);
 
   divMovieActions.classList.add('movie-actions');
   divMovieActions.appendChild(ratingInfo);
@@ -83,10 +121,10 @@ function createMovieTitle(title, year) {
   return divMovieTitle;
 }
 
-function createMovieInfo(title, year, rating) {
+function createMovieInfo(movieData, isFavorite) {
   const divMovieInfo = document.createElement('div');
-  const movieTitle = createMovieTitle(title, year);
-  const movieActions = createMovieActions(rating);
+  const movieTitle = createMovieTitle(movieData.title, movieData.release_date);
+  const movieActions = createMovieActions(movieData, isFavorite);
 
   divMovieInfo.classList.add('movie-info');
   divMovieInfo.appendChild(movieTitle);
@@ -120,42 +158,67 @@ function createMovieItem() {
   return sectionMovieItem;
 }
 
-async function renderMovies(movies) {
-  console.log(movies);
+// Render movies from an array in the page
+function renderMovies(movies) {
   const popularMovies = movies.map(
-    ({ poster_path, title, vote_average, release_date, overview }) => {
+    ({ poster_path, title, vote_average, release_date, overview, id }) => {
       return {
-        poster: `https://image.tmdb.org/t/p/w300${poster_path}`,
+        id,
+        poster_path: `https://image.tmdb.org/t/p/w300${poster_path}`,
         title,
-        rating: vote_average.toFixed(1),
-        release: release_date.split('-')[0],
-        overview: overview,
+        vote_average:
+          typeof vote_average === 'number'
+            ? vote_average.toFixed(1)
+            : vote_average,
+        release_date: release_date.split('-')[0],
+        overview,
       };
     }
   );
 
-  const moviesElementsList = popularMovies.map(
-    ({ poster, title, rating, release, overview }) => {
-      const movieItem = createMovieItem();
-      const movieImg = createMovieImg(poster, `${title} Poster`);
-      const movieInfo = createMovieInfo(title, release, rating);
-      const movieOverview = createMovieOverview(overview);
+  const moviesElementsList = popularMovies.map((movie) => {
+    const favoriteMovies = getFavoriteMoviesLocalStorage();
+    const isFavorite =
+      favoriteMovies.length === 0
+        ? false
+        : !!favoriteMovies.find(
+            (favoriteMovie) => movie.id === favoriteMovie.id
+          );
 
-      movieItem.appendChild(movieImg);
-      movieItem.appendChild(movieInfo);
-      movieItem.appendChild(movieOverview);
+    const movieItem = createMovieItem();
+    const movieImg = createMovieImg(movie.poster_path, `${movie.title} Poster`);
+    const movieInfo = createMovieInfo(movie, isFavorite);
+    const movieOverview = createMovieOverview(movie.overview);
 
-      return movieItem;
-    }
-  );
+    movieItem.appendChild(movieImg);
+    movieItem.appendChild(movieInfo);
+    movieItem.appendChild(movieOverview);
+
+    return movieItem;
+  });
 
   moviesElementsList.forEach((movieElement) =>
     moviesContainer.appendChild(movieElement)
   );
 }
 
-async function searchMovie(query) {
+filterFavoritesButton.addEventListener('change', (e) => {
+  searchInput.value = '';
+  if (!e.target.checked) {
+    getPopularMovies();
+    return;
+  }
+
+  clearMoviesContainer();
+  const favoriteMovies = getFavoriteMoviesLocalStorage();
+  renderMovies(favoriteMovies);
+});
+
+// Asynchronously get movies by search query from the API
+async function searchMoviesByName(query) {
   moviesContainer.innerHTML = '<div class="loading"></div>';
+  filterFavoritesButton.checked = false;
+
   const searchParams = `/search/movie?query=${query}&language=${clientLanguage}&include_adult=false&api_key=`;
   const queryResults = await fetch(url + searchParams + API_KEY)
     .then((response) => response.json())
@@ -163,7 +226,7 @@ async function searchMovie(query) {
     .then((movies) => movies)
     .catch((error) => error);
 
-  moviesContainer.innerHTML = '';
+  clearMoviesContainer();
   renderMovies(queryResults);
 }
 
@@ -171,22 +234,21 @@ searchForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const query = searchInput.value;
   const isValid = query.replace(/\s/g, '').length > 4;
-  console.log(searchInput);
 
   if (isValid) {
-    searchMovie(query);
+    searchMoviesByName(query);
     return;
   }
 
   searchForm.classList.add('invalid');
 });
 
-searchInput.addEventListener('keyup', () => {
+searchInput.addEventListener('input', () => {
   searchForm.classList.remove('invalid');
 });
 
 // Asynchronously get movies from the API
-(async function getPopularMovies() {
+async function getPopularMovies() {
   const movies = await fetch(
     url + `/movie/popular?language=${clientLanguage}&api_key=` + API_KEY
   )
@@ -200,6 +262,8 @@ searchInput.addEventListener('keyup', () => {
     return;
   }
 
-  moviesContainer.innerHTML = '';
+  clearMoviesContainer();
   renderMovies(movies);
-})();
+}
+
+getPopularMovies();

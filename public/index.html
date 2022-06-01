@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+	<title>Filmes Populares</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+	<header>
+		<h1 id="main-title">Filmes Populares</h1>
+		<section class="search-parameters">
+			<form id="search-bar">
+				<input type="text" name="search-movie" autocomplete="off" id="search-movie"
+					placeholder="Digite algum filme para pesquisar..." />
+				<button type="submit" id="search">
+					<img src="./assets/search-icon.svg" alt="Icone de Lupa" />
+				</button>
+			</form>
+			<div class="favorites">
+				<input type="checkbox" name="favorites" id="favorites" />
+				<label for="favorites">Mostrar meus filmes favoritos apenas</label>
+			</div>
+		</section>
+	</header>
+	<main>
+		<section class="movies-container">
+			<div class="loading"></div>
+		</section>
+	</main>
+	<footer>
+		<p>
+			Made with <span id="heart">♥</span> by
+			<a href="https://github.com/afx-nicolas/" target="_blank" rel="noreferrer noopener">Nicolas A. Feitoza</a>
+		</p>
+	</footer>
+</body>
+
+</html>
